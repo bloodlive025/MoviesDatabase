@@ -10,7 +10,10 @@ const config = {
 
 const connection = await mysql.createConnection(config)
 
-
+function uuidToBin(uuid) { //FUNCION PARA CONVERTIR UUID a BIN Para ingresarlo a la tabla movie_genre
+    const hex = uuid.replace(/-/g, '');
+    return Buffer.from(hex, 'hex');
+}
 
 export class MovieModel {
     static async getAll ({genre}){
@@ -37,6 +40,8 @@ export class MovieModel {
         const [result] = await connection.query('SELECT BIN_TO_UUID(id) as id, title ,poster,year FROM movie;')
         return result
     }
+
+
 
     static async getById ({id}) {
         const [movie] = await connection.query(
@@ -68,10 +73,7 @@ export class MovieModel {
             [genreInput]
         )//Obtenemos los id de los generos de la pelicula en el string genreResult
 
-        function uuidToBin(uuid) { //FUNCION PARA CONVERTIR UUID a BIN Para ingresarlo a la tabla movie_genre
-            const hex = uuid.replace(/-/g, '');
-            return Buffer.from(hex, 'hex');
-        }
+
         const movieBin = uuidToBin(uuid) // Convertimos el UUID a BIN
 
         try {
@@ -88,6 +90,8 @@ export class MovieModel {
             VALUES ?`,
             [values]
         );
+
+        
         } catch (e) {
         // puede enviarle información sensible
             throw new Error('Error creating movie')
@@ -109,9 +113,73 @@ export class MovieModel {
     }
 
     static async update ({id, input}) {
+        let [movieData] = await connection.query(`SELECT title,year,director,duration,rate,poster
+             FROM movie WHERE id = UUID_TO_BIN(?);`, [id])
 
+        const [genres] = await connection.query(
+            `SELECT g.name FROM genre g
+            INNER JOIN movie_genres mg ON g.id = mg.genre_id
+            WHERE mg.movie_id = UUID_TO_BIN(?);`, [id]
+        )
+
+        const genresString = genres.map(g => g.name)
+        movieData = {
+            ...movieData[0],
+            genre: genresString
+        }
+
+
+        input = {
+            ...movieData,
+            ...input
+        }
+
+
+        const {
+            genre: genreInput,
+            title,
+            year,
+            director,
+            duration,
+            rate,
+            poster
+        } = input
+
+        try {
+            await connection.query(
+                `UPDATE movie SET title = ?, year = ?, director = ?, duration = ?, poster = ?, rate = ?
+                WHERE id = UUID_TO_BIN(?);`,
+                [title, year, director, duration, poster, rate, id]
+            )
+            
+            // Actualizar géneros
+            await connection.query(
+                'DELETE FROM movie_genres WHERE movie_id = UUID_TO_BIN(?);',
+                [id]
+            )
+
+            const [genreResult] = await connection.query(
+                'SELECT id FROM genre WHERE LOWER(name) IN (?);',
+                [genreInput]
+            )
+
+            const movieBin = uuidToBin(id)
+
+            const genreIds = genreResult.map(g => g.id)
+            const values = genreIds.map(genreId => [movieBin, genreId])
+            await connection.query(
+                `INSERT INTO movie_genres (movie_id, genre_id)
+                VALUES ?`,
+                [values]
+            )
+            return { input }
+        } catch (e) {
+            throw new Error('Error updating movie')
+        }
     }
 
+
+    
     static async delete ({id}) {
        try {
         await connection.query(

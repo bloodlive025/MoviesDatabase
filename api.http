@@ -35,11 +35,11 @@ Content-Type: application/json
 }
 ### Actualizar una pelicula
 
-PATCH http://localhost:1234/movies/c8a7d63f-3b04-44d3-9d95-8782fd7dcfaf
+PATCH http://localhost:1234/movies/f4a5919d-848f-11f0-a70e-00ff05289a1e
 Content-Type: application/json
 
 {
-    "year": 2020
+    "poster" : "https://images.squarespace-cdn.com/content/v1/5fe4caeadae61a2f19719512/5d3e39da-8009-454d-8d84-9cd72e6b921b/Alice+%26+Eugeo+%26+Kirito"
 }
 
 ### Borrar una pelicula
