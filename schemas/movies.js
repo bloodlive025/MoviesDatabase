@@ -13,7 +13,7 @@ const MovieSchema = z.object({
         message: 'Movie poster must be a valid URL'
     }),
     genre: z.array(z.string().transform((val) => val.toLowerCase()).pipe(
-        z.enum(['action', 'comedy', 'drama', 'fantasy', 'horror', 'romance','adventure','thriller','sci-fi']),
+        z.enum(['action', 'comedy', 'drama', 'fantasy', 'horror', 'romance','adventure','thriller','sci-fi','anime']),
         {
             required_error: 'Movie genre is required.',
             invalid_type_error: 'Movie genre must be one of the predefined values.'
